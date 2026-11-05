@@ -1,2 +1,30 @@
-// ignore all zip files
+# .NET Core / Visual Studio
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+.vs/
+*.user
+*.userosscache
+*.sln.docstates
+*.suo
+
+# Local uploads and secrets
+uploads/*
+!uploads/.gitkeep
+appsettings.Development.json
+
+# Test results and coverage
+TestResults/
+[Tt]est[Rr]esults/
+*.trx
+*.coverage
+*.coveragexml
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Archives
 *.zip
+*.tar.gz

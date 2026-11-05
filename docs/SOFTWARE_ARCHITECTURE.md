@@ -36,15 +36,22 @@ jobayer-portfolio-api/
 ├── JobayerPortfolio.sln
 ├── src/
 │   ├── Portfolio.Domain/
-│   │   ├── Common/
+│   │   ├── Contracts/
+│   │   │   ├── IAggregateRoot.cs
+│   │   │   ├── IAuditableEntity.cs
+│   │   │   ├── IRepository.cs
+│   │   │   └── IUnitOfWork.cs
 │   │   ├── Entities/
 │   │   ├── Enums/
+│   │   ├── ValueObjects/
 │   │   └── Exceptions/
 │   ├── Portfolio.Application/
+│   │   ├── Contracts/
+│   │   │   ├── IApplicationUnitOfWork.cs
+│   │   │   ├── Repositories/
+│   │   │   └── Services/
+│   │   ├── Behaviors/
 │   │   ├── Common/
-│   │   │   ├── Interfaces/
-│   │   │   ├── Behaviors/
-│   │   │   └── Models/
 │   │   └── Features/
 │   │       ├── Auth/
 │   │       ├── Profile/
@@ -58,15 +65,22 @@ jobayer-portfolio-api/
 │   │       ├── Contact/
 │   │       └── Media/
 │   ├── Portfolio.Infrastructure/
-│   │   ├── Persistence/
+│   │   ├── Data/
 │   │   │   ├── PortfolioDbContext.cs
+│   │   │   ├── UnitOfWork.cs
+│   │   │   ├── ApplicationUnitOfWork.cs
+│   │   │   ├── Repositories/
 │   │   │   ├── Configurations/
-│   │   │   └── Migrations/
-│   │   ├── Identity/
-│   │   ├── Storage/
-│   │   └── Email/
+│   │   │   ├── Migrations/
+│   │   │   └── Seeds/
+│   │   └── Services/
+│   │       ├── TokenService.cs
+│   │       ├── PasswordHasher.cs
+│   │       ├── LocalFileStorageService.cs
+│   │       └── SmtpEmailService.cs
 │   └── Portfolio.Api/
-│       ├── Endpoints/
+│       ├── Controllers/
+│       │   ├── BaseApiController.cs
 │       │   ├── Public/
 │       │   ├── Auth/
 │       │   └── Admin/

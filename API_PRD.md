@@ -143,12 +143,13 @@ The overall solution has three separately deployed applications:
 
 ------------------------------------------------------------------------
 
-## 5. Open Decisions
+## 5. Architectural Decisions & Status
 
-| Decision | Current Proposal | Status |
+| Decision | Accepted Choice | Status |
 |---|---|---|
-| .NET Version | .NET 8 LTS or .NET 9/10 current stable | Needs confirmation |
-| Architecture pattern | Clean Architecture + MediatR/CQRS + FluentValidation | Proposed |
-| Object storage | Local disk in dev; Cloudflare R2 / AWS S3 in prod | Open |
-| Email provider | SMTP / Resend / SendGrid / AWS SES | Open |
-| Spam protection | Server-side rate limiting + honeypot + optional Cloudflare Turnstile | Proposed |
+| .NET Version | .NET 10 (`net10.0`) | Accepted (DEC-API-004) |
+| Architecture pattern | Clean Architecture + DDD (`MaleFashion-eCommerce` pattern) + Cortex.Mediator / FluentValidation | Accepted (DEC-API-005) |
+| Object storage | Local disk in dev (`/uploads`); Cloudflare R2 / AWS S3 ready in prod | Accepted (DEC-API-002) |
+| Email provider | SMTP / MailKit in dev; configurable in prod | Accepted |
+| Presentation | ASP.NET Core Web API Controllers (`Public/`, `Admin/`, `Auth/`) | Accepted (DEC-API-006) |
+| Spam protection | Server-side IP rate limiting + honeypot + input sanitization | Accepted |
