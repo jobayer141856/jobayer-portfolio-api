@@ -1,0 +1,14 @@
+**/.git
+**/.vs
+**/.vscode
+**/bin
+**/obj
+**/TestResults
+**/uploads/*
+!**/uploads/.gitkeep
+**/*.user
+**/*.suo
+.env
+.env.*
+.envv*
+

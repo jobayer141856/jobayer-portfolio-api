@@ -37,7 +37,7 @@ services:
       Cors__PublicOrigins__0: http://localhost:4200
       Cors__AdminOrigins__0: http://localhost:4300
     ports:
-      - "5000:8080"
+      - "5050:8080"
     volumes:
       - api_uploads:/app/wwwroot/uploads
 
