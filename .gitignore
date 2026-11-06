@@ -28,3 +28,13 @@ Thumbs.db
 # Archives
 *.zip
 *.tar.gz
+
+# Environment and secrets
+.env*
+.envv*
+!.env.example
+
+# Environment and secrets
+.env*
+.envv*
+!.env.example
