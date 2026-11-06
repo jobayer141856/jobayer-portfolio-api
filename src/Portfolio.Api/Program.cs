@@ -92,6 +92,11 @@ if (app.Environment.IsDevelopment())
         options.WithTitle("Jobayer Portfolio API")
                .WithTheme(ScalarTheme.Moon);
     });
+
+    // Friendly redirects for root and traditional /swagger navigation
+    app.MapGet("/", () => Results.Redirect("/scalar/v1"));
+    app.MapGet("/swagger", () => Results.Redirect("/scalar/v1"));
+    app.MapGet("/swagger/index.html", () => Results.Redirect("/scalar/v1"));
 }
 
 // Serve Static Files for Uploads
