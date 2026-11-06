@@ -4,14 +4,43 @@ services:
     container_name: jobayer-portfolio-postgres
     restart: unless-stopped
     environment:
-      POSTGRES_DB: jobayer_portfolio
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgrespassword
+      POSTGRES_DB: ${POSTGRES_DB:-jobayer_portfolio}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgrespassword}
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-jobayer_portfolio}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  portfolio-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: jobayer-portfolio-api
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ConnectionStrings__DefaultConnection: Host=postgres;Port=5432;Database=${POSTGRES_DB:-jobayer_portfolio};Username=${POSTGRES_USER:-postgres};Password=${POSTGRES_PASSWORD:-postgrespassword}
+      Jwt__Key: ${JWT_SECRET:-SuperSecretPortfolioKeyMinimum32BytesLongForSecurity!}
+      Jwt__Issuer: PortfolioApi
+      Jwt__Audience: PortfolioClients
+      BootstrapAdmin__Email: ${BOOTSTRAP_ADMIN_EMAIL:-admin@jobayer.dev}
+      BootstrapAdmin__InitialPassword: ${BOOTSTRAP_ADMIN_PASSWORD:-Admin@123456}
+      Cors__PublicOrigins__0: http://localhost:4200
+      Cors__AdminOrigins__0: http://localhost:4300
+    ports:
+      - "5000:8080"
+    volumes:
+      - api_uploads:/app/wwwroot/uploads
 
 volumes:
   postgres_data:
-
+  api_uploads:
