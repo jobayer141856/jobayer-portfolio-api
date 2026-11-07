@@ -96,8 +96,8 @@ jobs:
           $publicOrigins = $env:CORS_PUB_ORIGINS
           $adminOrigins = $env:CORS_ADM_ORIGINS
 
-          $pubList = if ($publicOrigins) { $publicOrigins -split ',' } else { @("https://jobayer-portfolio-web.vercel.app", "http://localhost:4200") }
-          $admList = if ($adminOrigins) { $adminOrigins -split ',' } else { @("https://jobayer-portfolio-admin.jobayerhossen64.workers.dev", "http://localhost:4300") }
+          $pubList = if ($publicOrigins) { $publicOrigins -split ',' } else { @("https://jobayer-portfolio-web.vercel.app", "https://jobayer-portfolio-api.jobayerhossen64.workers.dev", "http://localhost:4200") }
+          $admList = if ($adminOrigins) { $adminOrigins -split ',' } else { @("https://jobayer-portfolio-admin.jobayerhossen64.workers.dev", "https://jobayer-portfolio-api.jobayerhossen64.workers.dev", "http://localhost:4300") }
 
           $config = @{
             "Logging" = @{
@@ -121,6 +121,10 @@ jobs:
             "Cors" = @{
               "PublicOrigins" = $pubList
               "AdminOrigins" = $admList
+            }
+            "BootstrapAdmin" = @{
+              "Email" = "admin@jobayer.dev"
+              "InitialPassword" = "Admin@123456"
             }
             "Storage" = @{
               "Provider" = "Local"

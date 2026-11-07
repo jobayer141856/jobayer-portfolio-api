@@ -145,11 +145,8 @@ app.MapControllers();
 app.MapHealthChecks("/health/live");
 app.MapHealthChecks("/health/ready");
 
-// Seed database on startup in development or when requested
-if (args.Contains("--seed") || app.Environment.IsDevelopment())
-{
-    await DataSeeder.SeedAsync(app.Services);
-}
+// Ensure migrations and bootstrap seed data exist on startup
+await DataSeeder.SeedAsync(app.Services);
 
 app.Run();
 
