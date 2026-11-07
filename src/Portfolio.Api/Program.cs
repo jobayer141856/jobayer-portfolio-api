@@ -98,6 +98,17 @@ if (app.Environment.IsDevelopment())
     app.MapGet("/swagger", () => Results.Redirect("/scalar/v1"));
     app.MapGet("/swagger/index.html", () => Results.Redirect("/scalar/v1"));
 }
+else
+{
+    // Health/status payload at root for production verification
+    app.MapGet("/", () => Results.Ok(new
+    {
+        service = "Jobayer Portfolio API",
+        status = "Healthy",
+        version = "1.0.0",
+        timestamp = DateTime.UtcNow
+    }));
+}
 
 // Serve Static Files for Uploads
 var rawUploadsPath = builder.Configuration["Storage:LocalRootPath"] ?? Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads");

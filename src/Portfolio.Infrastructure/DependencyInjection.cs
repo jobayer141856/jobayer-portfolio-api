@@ -15,8 +15,10 @@ public static class DependencyInjection
 {
     public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
     {
-        // PostgreSQL DbContext with snake_case naming
+        // PostgreSQL DbContext with snake_case naming (supporting PortfolioDb, DefaultConnection, or env var)
         var connectionString = configuration.GetConnectionString("PortfolioDb")
+            ?? configuration.GetConnectionString("DefaultConnection")
+            ?? configuration["DATABASE_URL"]
             ?? "Host=localhost;Port=5432;Database=jobayer_portfolio;Username=postgres;Password=postgres";
 
         services.AddDbContext<PortfolioDbContext>(options =>
