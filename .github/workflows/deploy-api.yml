@@ -144,28 +144,30 @@ jobs:
           MONSTERASP_WEBSITE_NAME: ${{ secrets.MONSTERASP_WEBSITE_NAME }}
         run: |
           $rawServer = $env:MONSTERASP_SERVER_COMPUTER_NAME
-          $siteName = $env:MONSTERASP_WEBSITE_NAME
-          $endpoint = if ($rawServer) { $rawServer.Trim().Trim('"', "'") } else { "" }
-          if (-not $endpoint) { throw "MONSTERASP_SERVER_COMPUTER_NAME is empty." }
+          if (-not $rawServer) { throw "MONSTERASP_SERVER_COMPUTER_NAME is empty." }
 
-          if ($endpoint -notmatch '(?i)msdeploy\.axd') {
-              $hostPort = ($endpoint -replace '^(?i)https?://', '').Trim('/')
-              if ($hostPort.Contains('/')) {
-                  $hostPort = $hostPort.Split('/')[0]
-              }
-              if ($hostPort -notmatch ':\d+$') {
-                  $hostPort = "$hostPort:8172"
-              }
-              $encodedSite = [System.Uri]::EscapeDataString($siteName)
-              $endpoint = "https://$hostPort/msdeploy.axd?site=$encodedSite"
-          } elseif ($endpoint -notmatch '(?i)[\?&]site=') {
-              $encodedSite = [System.Uri]::EscapeDataString($siteName)
-              $joiner = if ($endpoint.Contains('?')) { '&' } else { '?' }
-              $endpoint = "$endpoint${joiner}site=$encodedSite"
+          # 1. Clean quotes and whitespace
+          $clean = $rawServer.Trim().Trim('"', "'")
+
+          # 2. Strip any existing /msdeploy.axd or query parameters (simply-web-deploy appends this internally)
+          $clean = $clean -replace '(?i)/msdeploy\.axd.*$', ''
+          $clean = $clean.TrimEnd('/')
+
+          # 3. Extract host:port
+          $hostPart = $clean -replace '^(?i)https?://', ''
+          $hostPart = $hostPart.TrimEnd('/')
+          if ($hostPart.Contains('/')) {
+              $hostPart = $hostPart.Split('/')[0]
           }
 
+          # 4. Append default WebDeploy port 8172 safely without scope collision
+          if ($hostPart -notmatch ':\d+$') {
+              $hostPart = "${hostPart}:8172"
+          }
+
+          $endpoint = "https://$hostPart"
           "server_computer_name=$endpoint" >> $env:GITHUB_OUTPUT
-          Write-Host "Prepared WebDeploy endpoint."
+          Write-Host "Normalized WebDeploy computer name: $endpoint"
 
       - name: Deploy to MonsterASP.NET via WebDeploy
         if: env.HAS_MONSTERASP_SECRETS != ''
