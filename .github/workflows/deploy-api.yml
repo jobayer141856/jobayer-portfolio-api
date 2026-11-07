@@ -134,6 +134,39 @@ jobs:
           $config | ConvertTo-Json -Depth 5 | Set-Content -Path $publishPath -Encoding utf8
           Write-Host "Successfully generated ./publish/appsettings.Production.json with production secrets."
 
+      - name: Normalize WebDeploy endpoint
+        if: env.HAS_MONSTERASP_SECRETS != ''
+        id: normalize_webdeploy
+        shell: pwsh
+        env:
+          HAS_MONSTERASP_SECRETS: ${{ secrets.MONSTERASP_WEBSITE_NAME }}
+          MONSTERASP_SERVER_COMPUTER_NAME: ${{ secrets.MONSTERASP_SERVER_COMPUTER_NAME }}
+          MONSTERASP_WEBSITE_NAME: ${{ secrets.MONSTERASP_WEBSITE_NAME }}
+        run: |
+          $rawServer = $env:MONSTERASP_SERVER_COMPUTER_NAME
+          $siteName = $env:MONSTERASP_WEBSITE_NAME
+          $endpoint = if ($rawServer) { $rawServer.Trim().Trim('"', "'") } else { "" }
+          if (-not $endpoint) { throw "MONSTERASP_SERVER_COMPUTER_NAME is empty." }
+
+          if ($endpoint -notmatch '(?i)msdeploy\.axd') {
+              $hostPort = ($endpoint -replace '^(?i)https?://', '').Trim('/')
+              if ($hostPort.Contains('/')) {
+                  $hostPort = $hostPort.Split('/')[0]
+              }
+              if ($hostPort -notmatch ':\d+$') {
+                  $hostPort = "$hostPort:8172"
+              }
+              $encodedSite = [System.Uri]::EscapeDataString($siteName)
+              $endpoint = "https://$hostPort/msdeploy.axd?site=$encodedSite"
+          } elseif ($endpoint -notmatch '(?i)[\?&]site=') {
+              $encodedSite = [System.Uri]::EscapeDataString($siteName)
+              $joiner = if ($endpoint.Contains('?')) { '&' } else { '?' }
+              $endpoint = "$endpoint${joiner}site=$encodedSite"
+          }
+
+          "server_computer_name=$endpoint" >> $env:GITHUB_OUTPUT
+          Write-Host "Prepared WebDeploy endpoint."
+
       - name: Deploy to MonsterASP.NET via WebDeploy
         if: env.HAS_MONSTERASP_SECRETS != ''
         env:
@@ -141,8 +174,7 @@ jobs:
         uses: rasmusbuchholdt/simply-web-deploy@2.1.0
         with:
           website-name: ${{ secrets.MONSTERASP_WEBSITE_NAME }}
-          server-computer-name: ${{ secrets.MONSTERASP_SERVER_COMPUTER_NAME }}
+          server-computer-name: ${{ steps.normalize_webdeploy.outputs.server_computer_name }}
           server-username: ${{ secrets.MONSTERASP_SERVER_USERNAME }}
           server-password: ${{ secrets.MONSTERASP_SERVER_PASSWORD }}
           source-path: './publish'
-
