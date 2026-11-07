@@ -170,5 +170,24 @@ public class ValidationAndSecurityTests
         token.IsActive.Should().BeFalse();
         token.IsExpired.Should().BeTrue();
     }
+
+    [Fact]
+    public void NormalizeConnectionString_ShouldStripQuotesAndNormalize()
+    {
+        var rawQuoted = "\"Host=ep-bc5ja6w8-pooler.c-16.us-east-1.aws.neon.tech;Database=neondb;Username=neondb_owner;\"";
+        var normalized = Portfolio.Infrastructure.DependencyInjection.NormalizeConnectionString(rawQuoted);
+        normalized.Should().Be("Host=ep-bc5ja6w8-pooler.c-16.us-east-1.aws.neon.tech;Database=neondb;Username=neondb_owner;");
+
+        var rawSingleQuoted = "'Host=ep-bc5ja6w8-pooler.c-16.us-east-1.aws.neon.tech;Database=neondb;'";
+        var normalizedSingle = Portfolio.Infrastructure.DependencyInjection.NormalizeConnectionString(rawSingleQuoted);
+        normalizedSingle.Should().Be("Host=ep-bc5ja6w8-pooler.c-16.us-east-1.aws.neon.tech;Database=neondb;");
+
+        var uriFormat = "postgresql://myuser:mypass@ep-test.neon.tech/neondb?sslmode=require";
+        var normalizedUri = Portfolio.Infrastructure.DependencyInjection.NormalizeConnectionString(uriFormat);
+        normalizedUri.Should().Contain("Host=ep-test.neon.tech;");
+        normalizedUri.Should().Contain("Database=neondb;");
+        normalizedUri.Should().Contain("Username=myuser;");
+        normalizedUri.Should().Contain("Password=mypass;");
+    }
 }
 

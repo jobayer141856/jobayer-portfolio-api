@@ -49,10 +49,22 @@ jobs:
           NEON_DB_CONNECTION: ${{ secrets.NEON_CONNECTION_STRING }}
         shell: pwsh
         run: |
+          $raw = $env:NEON_DB_CONNECTION
+          $conn = if ($raw) { $raw.Trim().Trim('"', "'") } else { "" }
+          if ($conn.StartsWith("postgres://", [System.StringComparison]::OrdinalIgnoreCase) -or $conn.StartsWith("postgresql://", [System.StringComparison]::OrdinalIgnoreCase)) {
+              $uri = [System.Uri]$conn
+              $userInfo = $uri.UserInfo -split ':'
+              $user = $userInfo[0]
+              $pass = if ($userInfo.Length -gt 1) { $userInfo[1] } else { "" }
+              $db = $uri.AbsolutePath.Trim('/')
+              $port = if ($uri.Port -gt 0) { $uri.Port } else { 5432 }
+              $conn = "Host=$($uri.Host);Port=$port;Database=$db;Username=$user;Password=$pass;SSL Mode=Require;Trust Server Certificate=true;"
+          }
+
           dotnet ef database update `
             --project src/Portfolio.Infrastructure/Portfolio.Infrastructure.csproj `
             --startup-project src/Portfolio.Api/Portfolio.Api.csproj `
-            --connection "$env:NEON_DB_CONNECTION"
+            --connection "$conn"
 
       - name: Publish API for Windows IIS
         run: |
@@ -69,7 +81,17 @@ jobs:
           CORS_ADM_ORIGINS: ${{ secrets.CORS_ADMIN_ORIGINS }}
         run: |
           $publishPath = "./publish/appsettings.Production.json"
-          $neonConn = $env:NEON_DB_CONNECTION
+          $rawConn = $env:NEON_DB_CONNECTION
+          $neonConn = if ($rawConn) { $rawConn.Trim().Trim('"', "'") } else { "" }
+          if ($neonConn.StartsWith("postgres://", [System.StringComparison]::OrdinalIgnoreCase) -or $neonConn.StartsWith("postgresql://", [System.StringComparison]::OrdinalIgnoreCase)) {
+              $uri = [System.Uri]$neonConn
+              $userInfo = $uri.UserInfo -split ':'
+              $user = $userInfo[0]
+              $pass = if ($userInfo.Length -gt 1) { $userInfo[1] } else { "" }
+              $db = $uri.AbsolutePath.Trim('/')
+              $port = if ($uri.Port -gt 0) { $uri.Port } else { 5432 }
+              $neonConn = "Host=$($uri.Host);Port=$port;Database=$db;Username=$user;Password=$pass;SSL Mode=Require;Trust Server Certificate=true;"
+          }
           $jwtKey = $env:JWT_SECRET_KEY
           $publicOrigins = $env:CORS_PUB_ORIGINS
           $adminOrigins = $env:CORS_ADM_ORIGINS

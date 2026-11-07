@@ -16,10 +16,12 @@ public static class DependencyInjection
     public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
     {
         // PostgreSQL DbContext with snake_case naming (supporting PortfolioDb, DefaultConnection, or env var)
-        var connectionString = configuration.GetConnectionString("PortfolioDb")
+        var rawConnection = configuration.GetConnectionString("PortfolioDb")
             ?? configuration.GetConnectionString("DefaultConnection")
             ?? configuration["DATABASE_URL"]
             ?? "Host=localhost;Port=5432;Database=jobayer_portfolio;Username=postgres;Password=postgres";
+
+        var connectionString = NormalizeConnectionString(rawConnection);
 
         services.AddDbContext<PortfolioDbContext>(options =>
         {
@@ -73,6 +75,38 @@ public static class DependencyInjection
         });
 
         return services;
+    }
+
+    public static string NormalizeConnectionString(string? raw)
+    {
+        if (string.IsNullOrWhiteSpace(raw))
+        {
+            return "Host=localhost;Port=5432;Database=jobayer_portfolio;Username=postgres;Password=postgres";
+        }
+
+        var trimmed = raw.Trim().Trim('"', '\'');
+
+        // Automatically convert postgres:// or postgresql:// URIs to ADO.NET Key=Value format
+        if (trimmed.StartsWith("postgres://", StringComparison.OrdinalIgnoreCase) ||
+            trimmed.StartsWith("postgresql://", StringComparison.OrdinalIgnoreCase))
+        {
+            try
+            {
+                var uri = new Uri(trimmed);
+                var userInfo = uri.UserInfo.Split(':');
+                var user = userInfo[0];
+                var pass = userInfo.Length > 1 ? userInfo[1] : "";
+                var db = uri.AbsolutePath.Trim('/');
+                var port = uri.Port > 0 ? uri.Port : 5432;
+                return $"Host={uri.Host};Port={port};Database={db};Username={user};Password={pass};SSL Mode=Require;Trust Server Certificate=true;";
+            }
+            catch
+            {
+                return trimmed;
+            }
+        }
+
+        return trimmed;
     }
 }
 
