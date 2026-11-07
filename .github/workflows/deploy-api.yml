@@ -179,4 +179,4 @@ jobs:
           server-computer-name: ${{ steps.normalize_webdeploy.outputs.server_computer_name }}
           server-username: ${{ secrets.MONSTERASP_SERVER_USERNAME }}
           server-password: ${{ secrets.MONSTERASP_SERVER_PASSWORD }}
-          source-path: './publish'
+          source-path: '\publish\'
