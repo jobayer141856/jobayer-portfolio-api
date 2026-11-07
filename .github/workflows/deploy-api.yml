@@ -47,11 +47,12 @@ jobs:
         if: env.NEON_DB_CONNECTION != ''
         env:
           NEON_DB_CONNECTION: ${{ secrets.NEON_CONNECTION_STRING }}
+        shell: pwsh
         run: |
           dotnet ef database update `
             --project src/Portfolio.Infrastructure/Portfolio.Infrastructure.csproj `
             --startup-project src/Portfolio.Api/Portfolio.Api.csproj `
-            --connection "${{ secrets.NEON_CONNECTION_STRING }}"
+            --connection "$env:NEON_DB_CONNECTION"
 
       - name: Publish API for Windows IIS
         run: |
@@ -61,12 +62,17 @@ jobs:
 
       - name: Generate Production appsettings in Publish Folder
         shell: pwsh
+        env:
+          NEON_DB_CONNECTION: ${{ secrets.NEON_CONNECTION_STRING }}
+          JWT_SECRET_KEY: ${{ secrets.JWT_SIGNING_KEY }}
+          CORS_PUB_ORIGINS: ${{ secrets.CORS_PUBLIC_ORIGINS }}
+          CORS_ADM_ORIGINS: ${{ secrets.CORS_ADMIN_ORIGINS }}
         run: |
           $publishPath = "./publish/appsettings.Production.json"
-          $neonConn = "${{ secrets.NEON_CONNECTION_STRING }}"
-          $jwtKey = "${{ secrets.JWT_SIGNING_KEY }}"
-          $publicOrigins = "${{ secrets.CORS_PUBLIC_ORIGINS }}"
-          $adminOrigins = "${{ secrets.CORS_ADMIN_ORIGINS }}"
+          $neonConn = $env:NEON_DB_CONNECTION
+          $jwtKey = $env:JWT_SECRET_KEY
+          $publicOrigins = $env:CORS_PUB_ORIGINS
+          $adminOrigins = $env:CORS_ADM_ORIGINS
 
           $pubList = if ($publicOrigins) { $publicOrigins -split ',' } else { @("https://jobayer-portfolio-web.vercel.app", "http://localhost:4200") }
           $admList = if ($adminOrigins) { $adminOrigins -split ',' } else { @("https://jobayer-portfolio-admin.jobayerhossen64.workers.dev", "http://localhost:4300") }
