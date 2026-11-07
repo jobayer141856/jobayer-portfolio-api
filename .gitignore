@@ -38,3 +38,7 @@ Thumbs.db
 .env*
 .envv*
 !.env.example
+
+
+// DB files
+
