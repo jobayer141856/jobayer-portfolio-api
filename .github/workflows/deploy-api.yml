@@ -1,0 +1,120 @@
+name: Deploy API to MonsterASP.NET
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  build_test_migrate_deploy:
+    name: Build, Migrate & Deploy API
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: |
+            8.0.x
+            9.0.x
+            10.0.x
+          dotnet-quality: 'preview'
+
+      - name: Cache NuGet Packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj') }}
+          restore-keys: |
+            ${{ runner.os }}-nuget-
+
+      - name: Restore Dependencies
+        run: dotnet restore JobayerPortfolio.sln
+
+      - name: Build Solution (Release)
+        run: dotnet build JobayerPortfolio.sln --configuration Release --no-restore
+
+      - name: Run Unit Tests
+        run: dotnet test tests/Portfolio.UnitTests/Portfolio.UnitTests.csproj --configuration Release --no-build --verbosity normal
+
+      - name: Install EF Core Global Tool
+        run: dotnet tool install --global dotnet-ef || dotnet tool update --global dotnet-ef
+
+      - name: Apply EF Core Database Migrations to Neon.tech
+        if: env.NEON_DB_CONNECTION != ''
+        env:
+          NEON_DB_CONNECTION: ${{ secrets.NEON_CONNECTION_STRING }}
+        run: |
+          dotnet ef database update `
+            --project src/Portfolio.Infrastructure/Portfolio.Infrastructure.csproj `
+            --startup-project src/Portfolio.Api/Portfolio.Api.csproj `
+            --connection "${{ secrets.NEON_CONNECTION_STRING }}"
+
+      - name: Publish API for Windows IIS
+        run: |
+          dotnet publish src/Portfolio.Api/Portfolio.Api.csproj `
+            --configuration Release `
+            --output ./publish
+
+      - name: Generate Production appsettings in Publish Folder
+        shell: pwsh
+        run: |
+          $publishPath = "./publish/appsettings.Production.json"
+          $neonConn = "${{ secrets.NEON_CONNECTION_STRING }}"
+          $jwtKey = "${{ secrets.JWT_SIGNING_KEY }}"
+          $publicOrigins = "${{ secrets.CORS_PUBLIC_ORIGINS }}"
+          $adminOrigins = "${{ secrets.CORS_ADMIN_ORIGINS }}"
+
+          $pubList = if ($publicOrigins) { $publicOrigins -split ',' } else { @("http://localhost:4200") }
+          $admList = if ($adminOrigins) { $adminOrigins -split ',' } else { @("http://localhost:4300") }
+
+          $config = @{
+            "Logging" = @{
+              "LogLevel" = @{
+                "Default" = "Information"
+                "Microsoft.AspNetCore" = "Warning"
+              }
+            }
+            "AllowedHosts" = "*"
+            "ConnectionStrings" = @{
+              "PortfolioDb" = $neonConn
+              "DefaultConnection" = $neonConn
+            }
+            "Jwt" = @{
+              "Issuer" = "jobayer-portfolio-api"
+              "Audience" = "jobayer-portfolio-admin"
+              "SigningKey" = if ($jwtKey) { $jwtKey } else { "a-super-secret-production-jwt-key-minimum-32-chars-long" }
+              "AccessTokenExpirationMinutes" = 60
+              "RefreshTokenExpirationDays" = 14
+            }
+            "Cors" = @{
+              "PublicOrigins" = $pubList
+              "AdminOrigins" = $admList
+            }
+            "Storage" = @{
+              "Provider" = "Local"
+              "LocalRootPath" = "wwwroot/uploads"
+              "PublicBaseUrl" = "/uploads"
+              "MaxImageSizeBytes" = 5242880
+              "MaxDocumentSizeBytes" = 10485760
+            }
+          }
+
+          $config | ConvertTo-Json -Depth 5 | Set-Content -Path $publishPath -Encoding utf8
+          Write-Host "Successfully generated ./publish/appsettings.Production.json with production secrets."
+
+      - name: Deploy to MonsterASP.NET via WebDeploy
+        if: env.HAS_MONSTERASP_SECRETS != ''
+        env:
+          HAS_MONSTERASP_SECRETS: ${{ secrets.MONSTERASP_WEBSITE_NAME }}
+        uses: rasmusbuchholdt/simply-web-deploy@2.1.0
+        with:
+          website-name: ${{ secrets.MONSTERASP_WEBSITE_NAME }}
+          server-computer-name: ${{ secrets.MONSTERASP_SERVER_COMPUTER_NAME }}
+          server-username: ${{ secrets.MONSTERASP_SERVER_USERNAME }}
+          server-password: ${{ secrets.MONSTERASP_SERVER_PASSWORD }}
+          source-path: './publish'
+
