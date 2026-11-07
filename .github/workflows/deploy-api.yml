@@ -68,8 +68,8 @@ jobs:
           $publicOrigins = "${{ secrets.CORS_PUBLIC_ORIGINS }}"
           $adminOrigins = "${{ secrets.CORS_ADMIN_ORIGINS }}"
 
-          $pubList = if ($publicOrigins) { $publicOrigins -split ',' } else { @("http://localhost:4200") }
-          $admList = if ($adminOrigins) { $adminOrigins -split ',' } else { @("http://localhost:4300") }
+          $pubList = if ($publicOrigins) { $publicOrigins -split ',' } else { @("https://jobayer-portfolio-web.vercel.app", "http://localhost:4200") }
+          $admList = if ($adminOrigins) { $adminOrigins -split ',' } else { @("https://jobayer-portfolio-admin.jobayerhossen64.workers.dev", "http://localhost:4300") }
 
           $config = @{
             "Logging" = @{
